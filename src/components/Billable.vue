@@ -81,6 +81,23 @@ export default {
                 reader.onload = () => {
                   this.fileUrl = reader.result;
                   d3.csv(this.fileUrl, (error, data) => {
+                  let allowed_columns = [
+                                      "Billable Rate (per hour)",
+                                      "Date",
+                                      "Employee ID",
+                                      "End Time",
+                                      "Project",
+                                      "Start Time"
+                                     ];
+                  if(data.columns.sort().toString() !== allowed_columns.sort().toString()){
+                    this.$notify({
+                      group: 'foo',
+                      type:'error',
+                      title: 'Invalid content',
+                      text: 'This timesheet doesn\'t follow the accepted structure.'
+                    });
+                    return;
+                  }
                   const replacements = {
                   'Employee ID': 'employee_id', 
                   'Billable Rate (per hour)': 'rate_per_hour',
