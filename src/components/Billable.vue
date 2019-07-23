@@ -1,12 +1,13 @@
 <template>
   <div>
-    <form enctype="multipart/form-data">
-      <div class="content">
-        <label>Please upload the timesheet</label>
-        <input type="file" @change="onFileChange">
-      </div>
-      
-    </form>
+    <div class="content">
+      <form enctype="multipart/form-data" class="forn-inline">
+          <label>Please use the button below to upload a timesheet.</label>
+          <input type="text" class="form-control mb-2 mr-sm-2" id="text" placeholder="No upload yet" v-model="file_name">
+          <button type="submit" class="btn btn-primary mb-2" @click.prevent="upload">{{ button_text }}</button>
+          <input type="file" @change="onFileChange" style="display: none" id="uploader">
+      </form>
+    </div>
 
     <!-- <b-table :data="rowData" :columns="columns"></b-table> -->
     <div class="container" v-for="(project, index) in projects" :key="index">
@@ -46,8 +47,10 @@ export default {
   data() {
     return{
       fileUrl: '',
+      file_name:'',
       rowData: [],
       projects: [],
+      button_text: 'Choose',
       total: 0
     }
   },
@@ -76,19 +79,21 @@ export default {
                   'Date': 'date',
                   'Start Time': 'start_time',
                   'End Time': 'end_time'};
-              let projects = [];
-                let newData = data.map(row =>{
-                  projects.push(row.Project);
-                let replacedItems = Object.keys(row).map((key) => {
-                  const newKey = replacements[key] || key;
-                  return { [newKey] : row[key] };
-                });
-                const newRow = Object.assign({}, ...replacedItems);
-                return newRow;
-              });
-              this.projects = new Set(projects);
-              this.rowData = newData;
-              });
+                  let projects = [];
+                    let newData = data.map(row =>{
+                      projects.push(row.Project);
+                    let replacedItems = Object.keys(row).map((key) => {
+                      const newKey = replacements[key] || key;
+                      return { [newKey] : row[key] };
+                    });
+                    const newRow = Object.assign({}, ...replacedItems);
+                    return newRow;
+                  });
+                  this.projects = new Set(projects);
+                  this.rowData = newData;
+                  this.file_name = file.name;
+                  this.button_text = 'Choose another'
+                  });
                 }
             },
 
@@ -115,6 +120,9 @@ export default {
             },
             get_bills: function(project){
               return this.rowData.filter(i => i.project === project)
+            },
+            upload: () =>{
+              document.getElementById('uploader').click();
             }
 
         }
@@ -122,11 +130,20 @@ export default {
 </script>
 
 <style scoped>
-  form .content{
+  form{
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    width: 40%;
+    margin: 0 auto;
+    background-color: rgba(67,91,113,.9);
+    color: #fff;
+    font-family: calibri;
+    font-size: 1.2rem;
+    border-radius: 10px;
+    line-height: 1.428571429;
+    padding: 2%
     /*float: left;*/
   }
 </style>
