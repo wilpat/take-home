@@ -54,9 +54,11 @@ export default {
       total: 0
     }
   },
-  created(){
+  mounted(){
       // Accumulates the cost of a particular project
-      localStorage.setItem("total", 0);
+      if (process.isClient) {
+        localStorage.setItem("total", 0);
+      }
   },
 
   methods: {
@@ -201,23 +203,5 @@ export default {
 </script>
 
 <style scoped>
-  form{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 40%;
-    margin: 0 auto;
-    background-color: rgba(67,91,113,.9);
-    color: #fff;
-    font-family: calibri;
-    font-size: 1.2rem;
-    border-radius: 10px;
-    line-height: 1.428571429;
-    padding: 2%
-    /*float: left;*/
-  }
-  h2{
-    text-align: left;
-  }
+  
 </style>
