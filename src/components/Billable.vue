@@ -60,6 +60,15 @@ export default {
 
         methods: {
             onFileChange: async function(e) {
+                if(!this.hasExtension('uploader',['.csv'])){
+                  this.$notify({
+                    group: 'foo',
+                    type:'error',
+                    title: 'Invalid file type',
+                    text: 'Only csv files are allowed!'
+                  });
+                  return;
+                }
                 var files = e.target.files || e.dataTransfer.files;
                 if (!files.length)
                     return;
@@ -123,6 +132,10 @@ export default {
             },
             upload: () =>{
               document.getElementById('uploader').click();
+            },
+            hasExtension: (inputID, exts) =>{
+                var fileName = document.getElementById(inputID).value;
+                return (new RegExp('(' + exts.join('|').replace(/\./g, '\\.') + ')$')).test(fileName);
             }
 
         }
