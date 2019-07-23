@@ -1,0 +1,130 @@
+<template>
+  <div>
+    <form enctype="multipart/form-data">
+      <div>
+        <label>Please upload your timesheet</label>
+        <input type="file" @change="onFileChange">
+      </div>
+    </form>
+    <!-- <b-table :data="rowData" :columns="columns"></b-table> -->
+    <div class="container" v-for="(project, index) in projects" :key="index">
+      <h2>{{ project }}</h2>
+      <table class="table table-condensed">
+        <thead>
+          <tr>
+            <th>Employee ID</th>
+            <th>Number of Hours</th>
+            <th>Unit Price</th>
+            <th>Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(row, index) in get_bills(project)" :key="index">
+            <td>{{ row.employee_id }}</td>
+            <td>{{ time_difference(row.start_time, row.end_time) }}</td>
+            <td>{{ row.rate_per_hour }}</td>
+            <td>{{ get_cost(row.rate_per_hour, row.start_time, row.end_time) }}</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td style="text-align: right;"><b>Total:</b></td>
+            <td style="text-align: left;">{{ get_total(project) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</template>
+<script>
+import * as d3 from "d3v4";
+export default {
+  name: 'Billable',
+  data() {
+    return{
+      fileUrl: '',
+      rowData: [],
+      projects: [],
+      total: 0
+    }
+  },
+  created(){
+        localStorage.setItem("total", 0);
+      },
+
+        methods: {
+            onFileChange: async function(e) {
+                var files = e.target.files || e.dataTransfer.files;
+                if (!files.length)
+                    return;
+                await this.createInput(files[0]);
+            },
+            createInput: async function(file) {
+                var reader = new FileReader();
+                // var vm = this;
+                await reader.readAsDataURL(file);
+                reader.onload = () => {
+                  this.fileUrl = reader.result;
+                  d3.csv(this.fileUrl, (error, data) => {
+                  const replacements = {
+                  'Employee ID': 'employee_id', 
+                  'Billable Rate (per hour)': 'rate_per_hour',
+                  'Project': 'project',
+                  'Date': 'date',
+                  'Start Time': 'start_time',
+                  'End Time': 'end_time'};
+              let projects = [];
+                let newData = data.map(row =>{
+                  projects.push(row.Project);
+                let replacedItems = Object.keys(row).map((key) => {
+                  const newKey = replacements[key] || key;
+                  return { [newKey] : row[key] };
+                });
+                const newRow = Object.assign({}, ...replacedItems);
+                return newRow;
+              });
+              this.projects = new Set(projects);
+              this.rowData = newData;
+              });
+                }
+            },
+
+            time_difference: (a,b) =>{
+              let time1 = a.split(':');
+              let time2 = b.split(':');
+              let date1 = new Date(0, 0, 0, time1[0], time1[1]);
+            let date2 = new Date(0, 0, 0, time2[0], time2[1]);
+            var difference = new Date(date2 - date1);
+            return difference.getUTCHours();
+            },
+            get_cost: function(rate, start_time, end_time){
+              var hours = this.time_difference(start_time, end_time);
+              var cost = rate * hours;
+              var current_total = parseInt(localStorage.getItem('total'));
+              current_total += cost;
+              localStorage.setItem('total', current_total);
+              return cost;
+            },
+            get_total: function(){
+              let total = localStorage.getItem('total');
+              localStorage.setItem('total', 0);
+              return total;
+            },
+            get_bills: function(project){
+              return this.rowData.filter(i => i.project === project)
+            }
+
+        }
+}
+</script>
+
+<style scoped>
+  form div{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /*float: left;*/
+  }
+</style>
