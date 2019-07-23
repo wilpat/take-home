@@ -1,11 +1,13 @@
 <template>
   <div>
     <form enctype="multipart/form-data">
-      <div>
-        <label>Please upload your timesheet</label>
+      <div class="content">
+        <label>Please upload the timesheet</label>
         <input type="file" @change="onFileChange">
       </div>
+      
     </form>
+
     <!-- <b-table :data="rowData" :columns="columns"></b-table> -->
     <div class="container" v-for="(project, index) in projects" :key="index">
       <h2>{{ project }}</h2>
@@ -120,7 +122,7 @@ export default {
 </script>
 
 <style scoped>
-  form div{
+  form .content{
     display: flex;
     flex-direction: column;
     justify-content: center;
