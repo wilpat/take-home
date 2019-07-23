@@ -176,4 +176,7 @@ export default {
     padding: 2%
     /*float: left;*/
   }
+  h2{
+    text-align: left;
+  }
 </style>
