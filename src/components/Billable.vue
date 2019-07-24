@@ -12,7 +12,7 @@
     <section class="container" v-for="(project, index) in projects" :key="index">
       <h2 class="title is-2">{{ project }}</h2>
       <b-table
-        :data="group_by_user(get_bills(project))"
+        :data="group_by_employee(get_sheets(project))"
         ref="table"
         detailed
         hoverable
@@ -21,7 +21,6 @@
         :default-sort="['employee_id', 'asc']"
         detail-key="employee_id"
         @details-open="(row, index) => $toast.open(`Expanded Employee ID ${row.employee_id}`)"
-        @doneLoop="(msg) => console.log(msg)"
         :show-detail-icon="showDetailIcon">
 
         <template slot-scope="props">
@@ -49,7 +48,7 @@
                 sortable
                 centered
             >
-                {{ get_total_time(props.row.employee_id, get_bills(project)) }}
+                {{ get_total_time(props.row.employee_id, get_sheets(project)) }}
             </b-table-column>
 
             <b-table-column
@@ -59,7 +58,7 @@
                 sortable
                 centered
             >
-                {{ props.row.rate_per_hour }}
+                {{ formatNumber( props.row.rate_per_hour ) }}
             </b-table-column>
 
             <b-table-column
@@ -67,25 +66,25 @@
                 :label="columnsVisible['cost'].title"
                 centered
             >
-              {{ get_total_cost(props.row.rate_per_hour * get_total_time(props.row.employee_id, get_bills(project))) }}
+              {{ formatNumber(props.row.rate_per_hour * get_total_time(props.row.employee_id, get_sheets(project))) }}
             </b-table-column>
         </template>
 
         <template slot="detail" slot-scope="props">
-            <tr v-for="item in get_individual_bills(props.row.employee_id, get_bills(project))">
+            <tr v-for="item in get_individual_sheets(props.row.employee_id, get_sheets(project))">
                 <td v-if="showDetailIcon"></td>
                 <td v-show="columnsVisible['employee_id'].display" >&nbsp;&nbsp;&nbsp;&nbsp;{{ item.employee_id }}</td>
                 <td v-show="columnsVisible['hours'].display" class="has-text-centered">{{ time_difference(item.start_time, item.end_time) }}</td>
-                <td v-show="columnsVisible['rate_per_hour'].display" class="has-text-centered">{{ item.rate_per_hour }}</td>
+                <td v-show="columnsVisible['rate_per_hour'].display" class="has-text-centered">{{ formatNumber( item.rate_per_hour ) }}</td>
                 <td v-show="columnsVisible['cost'].display" class="has-text-centered">
-                   {{ item.rate_per_hour * time_difference(item.start_time, item.end_time) }}
+                   {{ formatNumber( item.rate_per_hour * time_difference(item.start_time, item.end_time) ) }}
                 </td>
             </tr>
         </template>
 
         <template slot="footer" v-if="!isCustom">
             <div class="has-text-right">
-                Total : {{get_total(get_bills(project))}}
+                Total : {{ formatNumber( get_total(get_sheets(project)) )}}
             </div>
         </template>
         
@@ -99,7 +98,7 @@
 <script>
 import * as d3 from "d3v4";
 export default {
-  name: 'Billable2',
+  name: 'Billable',
   data() {
     return{
       fileUrl: '',
@@ -137,35 +136,6 @@ export default {
           await this.createInput(files[0]);
       },
 
-      get_total_time: function(employee_id, bills){
-        let individual_bills = this.get_individual_bills(employee_id, bills);
-        let hours = individual_bills.reduce((acc,bill) => {
-          let diff = this.time_difference(bill.start_time, bill.end_time);
-          // console.log(bill);
-          return acc + diff;
-        },0)
-        return hours;
-      },
-
-      get_individual_bills: function(employee_id, bills) {
-        return bills.filter(bill => bill.employee_id == employee_id);
-      },
-
-      group_by_user: function(bills){
-        let unique = [];
-        let f = bills.filter(value => {
-          if(!unique.includes(value.employee_id)){
-            unique.push(value.employee_id);
-            // console.log(unique)
-            return true;
-          }else{
-            return false;
-          }
-        })
-        // console.log(bills)
-        // console.log(f)
-        return f;
-      },
 
       /**
        * Reads the selected file and populates the variables needed for rendering
@@ -198,6 +168,49 @@ export default {
             });
           }
       },
+
+      /**
+       * Get the total time spent by an employee on a project
+       * @param int employee_id, {object} sheets
+       * 
+       */
+      get_total_time: function(employee_id, sheets){
+        let individual_sheets = this.get_individual_sheets(employee_id, sheets);
+        let hours = individual_sheets.reduce((acc,sheet) => {
+          let diff = this.time_difference(sheet.start_time, sheet.end_time);
+          return acc + diff;
+        },0)
+        return hours;
+      },
+
+      /**
+       * Get the sheets of an employee
+       * @param int employee_id, {object} sheets
+       * 
+       */
+      get_individual_sheets: function(employee_id, sheets) {
+        return sheets.filter(sheet => sheet.employee_id == employee_id);
+      },
+
+      /**
+       * Group the sheets by the employer
+       * @param {object} sheets
+       * 
+       */
+      group_by_employee: function(individual_project_sheets){
+        let unique = [];
+        let grouped_sheets = individual_project_sheets.filter(value => {
+          if(!unique.includes(value.employee_id)){
+            unique.push(value.employee_id);
+            // console.log(unique)
+            return true;
+          }else{
+            return false;
+          }
+        })
+        return grouped_sheets;
+      },
+
 
       /**
        * Populates the variables needed for rendering
@@ -251,15 +264,6 @@ export default {
         return difference.getUTCHours();
       },
 
-       /**
-       * Gets the total cost of a particular project
-       * @return 'int'
-       */
-      get_total_cost: function(cost){
-          // total += cost;
-          return cost;
-      },
-
       /**
        * Gets the total cost billable for a project
        * @return 'string'
@@ -278,7 +282,7 @@ export default {
        * Gets the recorded timesheets of a particular project
        * @return [array]
        */
-      get_bills: function(project){
+      get_sheets: function(project){
         return this.row_data.filter(i => i.project === project)
       },
 
@@ -291,15 +295,28 @@ export default {
 
       /**
        * Validates if the entered file is csv or not
+       * @param "string" element_id, [array] extensions
        * @return bool
        */
-      hasExtension: (inputID, exts) =>{
-          var fileName = document.getElementById(inputID).value;
-          return (new RegExp('(' + exts.join('|').replace(/\./g, '\\.') + ')$')).test(fileName);
+      hasExtension: (element_id, extensions) =>{
+          var fileName = document.getElementById(element_id).value;
+          return (new RegExp('(' + extensions.join('|').replace(/\./g, '\\.') + ')$')).test(fileName);
       },
 
-      toggle(row) {
+      /**
+      * Trigger the row toggle function in the b-table component
+      */
+      toggle: function(row) {
           this.$refs.table.toggleDetails(row)
+      },
+
+      /**
+      * Format number into currency
+      * @param int num
+      * @return "string"
+      */
+      formatNumber: (num) => {
+          return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,")
       }
 
   }
