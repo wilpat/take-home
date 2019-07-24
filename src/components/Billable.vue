@@ -41,6 +41,7 @@
 
 </template>
 <script>
+var total = 0;
 import * as d3 from "d3v4";
 export default {
   name: 'Billable',
@@ -50,15 +51,8 @@ export default {
       file_name:'',
       rowData: [],
       projects: [],
-      button_text: 'Choose',
-      total: 0
+      button_text: 'Choose'
     }
-  },
-  mounted(){
-      // Accumulates the cost of a particular project
-      if (process.isClient) {
-        localStorage.setItem("total", 0);
-      }
   },
 
   methods: {
@@ -75,6 +69,8 @@ export default {
           var files = e.target.files || e.dataTransfer.files;
           if (!files.length)
               return;
+          // console.log(document.getElementById('uploader').value);
+
           await this.createInput(files[0]);
       },
 
@@ -87,31 +83,41 @@ export default {
           reader.onload = () => {
             this.fileUrl = reader.result;
             d3.csv(this.fileUrl, async (error, data) => {
-            let allowed_columns = [
-                                "Billable Rate (per hour)",
-                                "Date",
-                                "Employee ID",
-                                "End Time",
-                                "Project",
-                                "Start Time"
-                               ];
-            if(data.columns.sort().toString() !== allowed_columns.sort().toString()){
-              this.$notify({
-                group: 'foo',
-                type:'error',
-                title: 'Invalid content',
-                text: 'This timesheet doesn\'t follow the accepted structure.'
-              });
-              return;
-            }
-            let { cleaned_data, projects }  = await this.preprocess(data);
-            this.projects = new Set(projects);
-            this.rowData = cleaned_data;
-            this.file_name = file.name;
-            this.button_text = 'Choose another'
+              let allowed_columns = [
+                "Billable Rate (per hour)",
+                "Date",
+                "Employee ID",
+                "End Time",
+                "Project",
+                "Start Time"
+              ];
+              if(data.columns.sort().toString() !== allowed_columns.sort().toString()){
+                this.$notify({
+                  group: 'foo',
+                  type:'error',
+                  title: 'Invalid content',
+                  text: 'This timesheet doesn\'t follow the accepted structure.'
+                });
+                return;
+              }
+              let { cleaned_data, projects }  = await this.preprocess(data);
+              await this.set_variables(cleaned_data, projects, file.name, 'Choose another');
             });
           }
       },
+
+      /**
+       * Populates the variables needed for rendering
+       * @param [array] data, [array] projects, "string" file_name, "string" button_text
+       * 
+       */
+      set_variables: function(data, projects, file_name, button_text){
+        this.projects = new Set(projects);
+        this.rowData = data;
+        this.file_name = file_name;
+        this.button_text = button_text
+      },
+
       /**
        * Cleans up the data for rendering
        * @param {object} data
@@ -156,12 +162,10 @@ export default {
        * @return 'int'
        */
       get_cost: function(rate, start_time, end_time){
-        var hours = this.time_difference(start_time, end_time);
-        var cost = rate * hours;
-        var current_total = parseInt(localStorage.getItem('total'));
-        current_total += cost;
-        localStorage.setItem('total', current_total);
-        return cost;
+          var hours = this.time_difference(start_time, end_time);
+          var cost = rate * hours;
+          total += cost;
+          return cost;
       },
 
       /**
@@ -169,9 +173,9 @@ export default {
        * @return 'string'
        */
       get_total: function(){
-        let total = localStorage.getItem('total');
-        localStorage.setItem('total', 0);
-        return total;
+        let accumulated_total = total;
+        total = 0
+        return accumulated_total;
       },
 
       /**
