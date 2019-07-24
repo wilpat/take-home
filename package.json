@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@vue/test-utils": "^1.0.0-beta.29",
+    "buefy": "^0.7.10",
     "core-js": "^2.6.5",
     "d3v4": "^4.2.2",
-    "fs": "0.0.1-security",
     "vue": "^2.6.10",
     "vue-loader": "^15.7.0",
     "vue-notification": "^1.3.16"

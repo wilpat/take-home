@@ -9,49 +9,112 @@
       </form>
     </div>
 
-    <!-- <b-table :data="rowData" :columns="columns"></b-table> -->
-    <div class="container" v-for="(project, index) in projects" :key="index">
-      <h2>{{ project }}</h2>
-      <table class="table table-condensed">
-        <thead>
-          <tr>
-            <th>Employee ID</th>
-            <th>Number of Hours</th>
-            <th>Unit Price</th>
-            <th>Cost</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, index) in get_bills(project)" :key="index">
-            <td>{{ row.employee_id }}</td>
-            <td>{{ time_difference(row.start_time, row.end_time) }}</td>
-            <td>{{ row.rate_per_hour }}</td>
-            <td>{{ get_cost(row.rate_per_hour, row.start_time, row.end_time) }}</td>
-          </tr>
-          <tr>
-            <td></td>
-            <td></td>
-            <td style="text-align: right;"><b>Total:</b></td>
-            <td style="text-align: left;">{{ get_total(project) }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <section class="container" v-for="(project, index) in projects" :key="index">
+      <h2 class="title is-2">{{ project }}</h2>
+      <b-table
+        :data="group_by_user(get_bills(project))"
+        ref="table"
+        detailed
+        hoverable
+        custom-detail-row
+        :opened-detailed="['1']"
+        :default-sort="['employee_id', 'asc']"
+        detail-key="employee_id"
+        @details-open="(row, index) => $toast.open(`Expanded Employee ID ${row.employee_id}`)"
+        @doneLoop="(msg) => console.log(msg)"
+        :show-detail-icon="showDetailIcon">
+
+        <template slot-scope="props">
+            <b-table-column
+                field="employee_id"
+                :visible="columnsVisible['employee_id'].display"
+                :label="columnsVisible['employee_id'].title"
+                width="300"
+                sortable
+            >
+                <template v-if="!showDetailIcon">
+                    {{ props.row.employee_id }}
+                </template>
+                <template v-else>
+                    <a @click="toggle(props.row)">
+                        {{ props.row.employee_id }}
+                    </a>
+                </template>
+            </b-table-column>
+
+            <b-table-column
+                field="hours"
+                :visible="columnsVisible['hours'].display"
+                :label="columnsVisible['hours'].title"
+                sortable
+                centered
+            >
+                {{ get_total_time(props.row.employee_id, get_bills(project)) }}
+            </b-table-column>
+
+            <b-table-column
+                field="rate_per_hour"
+                :visible="columnsVisible['rate_per_hour'].display"
+                :label="columnsVisible['rate_per_hour'].title"
+                sortable
+                centered
+            >
+                {{ props.row.rate_per_hour }}
+            </b-table-column>
+
+            <b-table-column
+                :visible="columnsVisible['cost'].display"
+                :label="columnsVisible['cost'].title"
+                centered
+            >
+              {{ get_total_cost(props.row.rate_per_hour * get_total_time(props.row.employee_id, get_bills(project))) }}
+            </b-table-column>
+        </template>
+
+        <template slot="detail" slot-scope="props">
+            <tr v-for="item in get_individual_bills(props.row.employee_id, get_bills(project))">
+                <td v-if="showDetailIcon"></td>
+                <td v-show="columnsVisible['employee_id'].display" >&nbsp;&nbsp;&nbsp;&nbsp;{{ item.employee_id }}</td>
+                <td v-show="columnsVisible['hours'].display" class="has-text-centered">{{ time_difference(item.start_time, item.end_time) }}</td>
+                <td v-show="columnsVisible['rate_per_hour'].display" class="has-text-centered">{{ item.rate_per_hour }}</td>
+                <td v-show="columnsVisible['cost'].display" class="has-text-centered">
+                   {{ item.rate_per_hour * time_difference(item.start_time, item.end_time) }}
+                </td>
+            </tr>
+        </template>
+
+        <template slot="footer" v-if="!isCustom">
+            <div class="has-text-right">
+                Total : {{get_total(get_bills(project))}}
+            </div>
+        </template>
+        
+
+      </b-table>
+      
+    </section>
   </div>
 
 </template>
 <script>
-var total = 0;
 import * as d3 from "d3v4";
 export default {
-  name: 'Billable',
+  name: 'Billable2',
   data() {
     return{
       fileUrl: '',
       file_name:'',
-      rowData: [],
+      row_data: [],
       projects: [],
-      button_text: 'Choose'
+      button_text: 'Choose',
+      columnsVisible: {
+          employee_id: { title: 'Employee ID', display: true },
+          hours: { title: 'Number of Hours', display: true },
+          rate_per_hour: { title: 'Unit Price', display: true },
+          cost: { title: 'Cost', display: true },
+      },
+      showDetailIcon: true,
+      isCustom: false
     }
   },
 
@@ -72,6 +135,36 @@ export default {
           // console.log(document.getElementById('uploader').value);
 
           await this.createInput(files[0]);
+      },
+
+      get_total_time: function(employee_id, bills){
+        let individual_bills = this.get_individual_bills(employee_id, bills);
+        let hours = individual_bills.reduce((acc,bill) => {
+          let diff = this.time_difference(bill.start_time, bill.end_time);
+          // console.log(bill);
+          return acc + diff;
+        },0)
+        return hours;
+      },
+
+      get_individual_bills: function(employee_id, bills) {
+        return bills.filter(bill => bill.employee_id == employee_id);
+      },
+
+      group_by_user: function(bills){
+        let unique = [];
+        let f = bills.filter(value => {
+          if(!unique.includes(value.employee_id)){
+            unique.push(value.employee_id);
+            // console.log(unique)
+            return true;
+          }else{
+            return false;
+          }
+        })
+        // console.log(bills)
+        // console.log(f)
+        return f;
       },
 
       /**
@@ -113,7 +206,7 @@ export default {
        */
       set_variables: function(data, projects, file_name, button_text){
         this.projects = new Set(projects);
-        this.rowData = data;
+        this.row_data = data;
         this.file_name = file_name;
         this.button_text = button_text
       },
@@ -149,6 +242,7 @@ export default {
        * @return 'string'
        */
       time_difference: (a,b) =>{
+        // console.log(a);
         let time1 = a.split(':');
         let time2 = b.split(':');
         let date1 = new Date(0, 0, 0, time1[0], time1[1]);
@@ -158,13 +252,11 @@ export default {
       },
 
        /**
-       * Gets the billable cost for the elapsed hours
+       * Gets the total cost of a particular project
        * @return 'int'
        */
-      get_cost: function(rate, start_time, end_time){
-          var hours = this.time_difference(start_time, end_time);
-          var cost = rate * hours;
-          total += cost;
+      get_total_cost: function(cost){
+          // total += cost;
           return cost;
       },
 
@@ -172,10 +264,14 @@ export default {
        * Gets the total cost billable for a project
        * @return 'string'
        */
-      get_total: function(){
-        let accumulated_total = total;
-        total = 0
-        return accumulated_total;
+      get_total: function(bills){
+        // console.log(bills)
+        let total = bills.reduce((acc,bill) => {
+          let diff = this.time_difference(bill.start_time, bill.end_time);
+          let cost = diff * bill.rate_per_hour;
+          return cost + acc;
+        },0)
+        return total;
       },
 
       /**
@@ -183,7 +279,7 @@ export default {
        * @return [array]
        */
       get_bills: function(project){
-        return this.rowData.filter(i => i.project === project)
+        return this.row_data.filter(i => i.project === project)
       },
 
       /**
@@ -200,6 +296,10 @@ export default {
       hasExtension: (inputID, exts) =>{
           var fileName = document.getElementById(inputID).value;
           return (new RegExp('(' + exts.join('|').replace(/\./g, '\\.') + ')$')).test(fileName);
+      },
+
+      toggle(row) {
+          this.$refs.table.toggleDetails(row)
       }
 
   }

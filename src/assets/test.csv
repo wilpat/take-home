@@ -1,5 +1,6 @@
 ﻿Employee ID,Billable Rate (per hour),Project,Date,Start Time,End Time
 1,300,Google,01/07/2019,09:00,17:00
+1,300,Google,02/07/2019,09:00,12:00
 2,200,Facebook,01/07/2019,11:00,16:00
 3,150,Binance,01/07/2019,08:00,12:00
 4,300,Flutterwave,01/07/2019,08:00,15:00

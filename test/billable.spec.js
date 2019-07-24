@@ -1,8 +1,6 @@
 import { mount } from '@vue/test-utils';
 import Billable from '../src/components/Billable.vue';
 import sheet from '../src/assets/test.csv';
-import * as fs from 'fs';
-// console.log(fs)
 import expect from 'expect';
 
 describe('Billable', () =>{
