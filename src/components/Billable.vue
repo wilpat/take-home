@@ -71,7 +71,7 @@
         </template>
 
         <template slot="detail" slot-scope="props">
-            <tr v-for="item in get_individual_sheets(props.row.employee_id, get_sheets(project))">
+            <tr v-for="(item, index) in get_individual_sheets(props.row.employee_id, get_sheets(project))" :key="getRandomInt(index, 1000000)">
                 <td v-if="showDetailIcon"></td>
                 <td v-show="columnsVisible['employee_id'].display" >&nbsp;&nbsp;&nbsp;&nbsp;{{ item.employee_id }}</td>
                 <td v-show="columnsVisible['hours'].display" class="has-text-centered">{{ time_difference(item.start_time, item.end_time) }}</td>
@@ -320,6 +320,19 @@ export default {
       */
       formatNumber: (num) => {
           return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,")
+      },
+
+      /**
+       * Returns a random integer between min (inclusive) and max (inclusive).
+       * The value is no lower than min (or the next integer greater than min
+       * if min isn't an integer) and no greater than max (or the next integer
+       * lower than max if max isn't an integer).
+       * Using Math.round() will give you a non-uniform distribution!
+       */
+      getRandomInt: (min, max) => {
+          min = Math.ceil(min);
+          max = Math.floor(max);
+          return Math.floor(Math.random() * (max - min + 1)) + min;
       }
 
   }
