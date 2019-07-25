@@ -5,7 +5,7 @@
           <label>Please use the button below to upload a timesheet.</label>
           <input type="text" class="form-control mb-2 mr-sm-2" id="text" placeholder="No upload yet" v-model="file_name">
           <button type="submit" class="btn btn-primary mb-2" @click.prevent="upload">{{ button_text }}</button>
-          <input type="file" @change="onFileChange" style="display: none" id="uploader">
+          <input type="file" @change="on_file_change" style="display: none" id="uploader">
       </form>
     </div>
 
@@ -118,7 +118,7 @@ export default {
   },
 
   methods: {
-      onFileChange: async function(e) {
+      on_file_change: async function(e) {
           if(!this.hasExtension('uploader',['.csv'])){
             this.$notify({
               group: 'foo',
@@ -132,15 +132,15 @@ export default {
           if (!files.length)
               return;
           // console.log(document.getElementById('uploader').value);
-
-          await this.createInput(files[0]);
+          this.button_text = 'Loading...';
+          await this.create_input(files[0]);
       },
 
 
       /**
        * Reads the selected file and populates the variables needed for rendering
        */
-      createInput: async function(file) {
+      create_input: async function(file) {
           var reader = new FileReader();
           await reader.readAsDataURL(file);
           reader.onload = () => {
@@ -161,8 +161,11 @@ export default {
                   title: 'Invalid content',
                   text: 'This timesheet doesn\'t follow the accepted structure.'
                 });
+                this.button_text = 'Choose';
+
                 return;
               }
+              this.button_text = 'Pre-processing...';
               let { cleaned_data, projects }  = await this.preprocess(data);
               await this.set_variables(cleaned_data, projects, file.name, 'Choose another');
             });

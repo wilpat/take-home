@@ -10,6 +10,9 @@ npm install
 npm run serve
 ```
 
+##Test timesheet file location
+`/src/assets/test.csv`
+
 ### Compiles and minifies for production
 ```
 npm run build
