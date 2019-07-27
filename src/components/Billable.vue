@@ -8,90 +8,96 @@
           <input type="file" @change="on_file_change" style="display: none" id="uploader">
       </form>
     </div>
+    
 
-    <section class="container" v-for="(project, index) in projects" :key="index">
-      <h2 class="title is-2">{{ project }}</h2>
-      <b-table
-        :data="group_by_employee(get_sheets(project))"
-        ref="table"
-        detailed
-        hoverable
-        custom-detail-row
-        :opened-detailed="['1']"
-        :default-sort="['employee_id', 'asc']"
-        detail-key="employee_id"
-        @details-open="(row, index) => $toast.open(`Expanded Employee ID ${row.employee_id}`)"
-        :show-detail-icon="showDetailIcon">
+    <section class="container" v-for="(project, index) in projects" :key="index" :id="index">
+      <div v-if="show == index">
+        <h2 class="title is-2">{{ project }}</h2>
+        <b-table
+          :data="group_by_employee(get_sheets(project))"
+          ref="table"
+          detailed
+          hoverable
+          custom-detail-row
+          :opened-detailed="['1']"
+          :default-sort="['employee_id', 'asc']"
+          detail-key="employee_id"
+          @details-open="(row, index) => $toast.open(`Expanded Employee ID ${row.employee_id}`)"
+          :show-detail-icon="showDetailIcon">
 
-        <template slot-scope="props">
-            <b-table-column
-                field="employee_id"
-                :visible="columnsVisible['employee_id'].display"
-                :label="columnsVisible['employee_id'].title"
-                width="300"
-                sortable
-            >
-                <template v-if="!showDetailIcon">
-                    {{ props.row.employee_id }}
-                </template>
-                <template v-else>
-                    <a @click="toggle(props.row)">
-                        {{ props.row.employee_id }}
-                    </a>
-                </template>
-            </b-table-column>
+          <template slot-scope="props">
+              <b-table-column
+                  field="employee_id"
+                  :visible="columnsVisible['employee_id'].display"
+                  :label="columnsVisible['employee_id'].title"
+                  width="300"
+                  sortable
+              >
+                  <template v-if="!showDetailIcon">
+                      {{ props.row.employee_id }}
+                  </template>
+                  <template v-else>
+                      <a @click="toggle(props.row)">
+                          {{ props.row.employee_id }}
+                      </a>
+                  </template>
+              </b-table-column>
 
-            <b-table-column
-                field="hours"
-                :visible="columnsVisible['hours'].display"
-                :label="columnsVisible['hours'].title"
-                sortable
-                centered
-            >
-                {{ get_total_time(props.row.employee_id, get_sheets(project)) }}
-            </b-table-column>
+              <b-table-column
+                  field="hours"
+                  :visible="columnsVisible['hours'].display"
+                  :label="columnsVisible['hours'].title"
+                  sortable
+                  centered
+              >
+                  {{ get_total_time(props.row.employee_id, get_sheets(project)) }}
+              </b-table-column>
 
-            <b-table-column
-                field="rate_per_hour"
-                :visible="columnsVisible['rate_per_hour'].display"
-                :label="columnsVisible['rate_per_hour'].title"
-                sortable
-                centered
-            >
-                {{ formatNumber( props.row.rate_per_hour ) }}
-            </b-table-column>
+              <b-table-column
+                  field="rate_per_hour"
+                  :visible="columnsVisible['rate_per_hour'].display"
+                  :label="columnsVisible['rate_per_hour'].title"
+                  sortable
+                  centered
+              >
+                  {{ formatNumber( props.row.rate_per_hour ) }}
+              </b-table-column>
 
-            <b-table-column
-                :visible="columnsVisible['cost'].display"
-                :label="columnsVisible['cost'].title"
-                centered
-            >
-              {{ formatNumber(props.row.rate_per_hour * get_total_time(props.row.employee_id, get_sheets(project))) }}
-            </b-table-column>
-        </template>
+              <b-table-column
+                  :visible="columnsVisible['cost'].display"
+                  :label="columnsVisible['cost'].title"
+                  centered
+              >
+                {{ formatNumber(props.row.rate_per_hour * get_total_time(props.row.employee_id, get_sheets(project))) }}
+              </b-table-column>
+          </template>
 
-        <template slot="detail" slot-scope="props">
-            <tr v-for="(item, index) in get_individual_sheets(props.row.employee_id, get_sheets(project))" :key="getRandomInt(index, 1000000)">
-                <td v-if="showDetailIcon"></td>
-                <td v-show="columnsVisible['employee_id'].display" >&nbsp;&nbsp;&nbsp;&nbsp;{{ item.employee_id }}</td>
-                <td v-show="columnsVisible['hours'].display" class="has-text-centered">{{ time_difference(item.start_time, item.end_time) }}</td>
-                <td v-show="columnsVisible['rate_per_hour'].display" class="has-text-centered">{{ formatNumber( item.rate_per_hour ) }}</td>
-                <td v-show="columnsVisible['cost'].display" class="has-text-centered">
-                   {{ formatNumber( item.rate_per_hour * time_difference(item.start_time, item.end_time) ) }}
-                </td>
-            </tr>
-        </template>
+          <template slot="detail" slot-scope="props">
+              <tr v-for="(item, index) in get_individual_sheets(props.row.employee_id, get_sheets(project))" :key="getRandomInt(index, 1000000)">
+                  <td v-if="showDetailIcon"></td>
+                  <td v-show="columnsVisible['employee_id'].display" >&nbsp;&nbsp;&nbsp;&nbsp;{{ item.employee_id }}</td>
+                  <td v-show="columnsVisible['hours'].display" class="has-text-centered">{{ time_difference(item.start_time, item.end_time) }}</td>
+                  <td v-show="columnsVisible['rate_per_hour'].display" class="has-text-centered">{{ formatNumber( item.rate_per_hour ) }}</td>
+                  <td v-show="columnsVisible['cost'].display" class="has-text-centered">
+                     {{ formatNumber( item.rate_per_hour * time_difference(item.start_time, item.end_time) ) }}
+                  </td>
+              </tr>
+          </template>
 
-        <template slot="footer" v-if="!isCustom">
-            <div class="has-text-right">
-                Total : {{ formatNumber( get_total(get_sheets(project)) )}}
-            </div>
-        </template>
-        
+          <template slot="footer" v-if="!isCustom">
+              <div class="has-text-right">
+                  Total : {{ formatNumber( get_total(get_sheets(project)) )}}
+              </div>
+          </template>
+          
 
-      </b-table>
-      
+        </b-table>
+      </div>
     </section>
+    <button style="margin-right: 20px;" @click="show--" v-if="show > 0" type="button" class="button is-info is-outlined">Previous</button>
+    <button @click="show++" v-if="show < projects.size - 1" type="button" class="button is-info is-outlined">Next</button>
+    <button v-if="projects.size" style="margin-left: 20px;" @click="print_invoice(show)" class="text-right button is-success is-rounded" type="button"> <i class="fab fa-github"></i>Print</button>
+    
   </div>
 
 </template>
@@ -105,6 +111,7 @@ export default {
       file_name:'',
       row_data: [],
       projects: [],
+      show:0,
       button_text: 'Choose',
       columnsVisible: {
           employee_id: { title: 'Employee ID', display: true },
@@ -333,6 +340,23 @@ export default {
           min = Math.ceil(min);
           max = Math.floor(max);
           return Math.floor(Math.random() * (max - min + 1)) + min;
+      },
+
+      /**
+       * Prints the invoice of a particular project
+       */
+      print_invoice(element_id) {
+        var content = document.getElementById(element_id).innerHTML;
+        var mywindow = window.open('', 'Print', 'height=600,width=800');
+        mywindow.document.write('<html><head><title>Print</title>');
+        mywindow.document.write('</head><body >');
+        mywindow.document.write(content);
+        mywindow.document.write('</body></html>');
+        mywindow.document.close();
+        mywindow.focus()
+        mywindow.print();
+        mywindow.close();
+        return true;
       }
 
   }
