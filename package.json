@@ -30,7 +30,7 @@
     "jsdom-global": "^3.0.2",
     "mocha": "^6.1.4",
     "mochapack": "^1.1.1",
-    "papaparse": "^5.0.0",
+    "papaparse": "^5.2.0",
     "vue-template-compiler": "^2.6.10"
   },
   "eslintConfig": {
